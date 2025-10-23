@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Amigo Secreto — Painel do Organizador</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="container">
+    <h1>Painel do organizador</h1>
+    <p>Importe o <code>data.json</code> atual para listar e editar cadastros.</p>
+
+    <section class="card">
+      <input type="file" id="file-in" accept=".json" />
+      <div class="muted small">Proteção mínima: este painel roda no navegador. Use com quem confia.</div>
+    </section>
+
+    <section id="list-area" class="card hidden">
+      <h2>Participantes</h2>
+      <table id="tbl" class="full">
+        <thead><tr><th>Nome</th><th>Observação</th><th>Ações</th></tr></thead>
+        <tbody></tbody>
+      </table>
+
+      <div class="row">
+        <button id="download-btn">Baixar data.json atualizado</button>
+        <button id="clear-btn">Limpar lista</button>
+      </div>
+    </section>
+
+    <p class="muted"><a href="index.html">Ir para ver presente</a> · <a href="cadastro.html">Cadastrar</a></p>
+  </main>
+
+  <script src="script.js"></script>
+  <script>
+    let adminData = [];
+    const fileIn = document.getElementById('file-in');
+    const listArea = document.getElementById('list-area');
+    const tblBody = document.querySelector('#tbl tbody');
+
+    fileIn.addEventListener('change', async (e) => {
+      const f = e.target.files[0];
+      if (!f) return;
+      const text = await f.text();
+      try {
+        adminData = JSON.parse(text);
+        renderTable();
+        listArea.classList.remove('hidden');
+      } catch (err) {
+        alert('Arquivo inválido');
+      }
+    });
+
+    function renderTable() {
+      tblBody.innerHTML = '';
+      adminData.forEach((entry, idx) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${escapeHtml(entry.name)}</td>
+                        <td class="muted small">Dados criptografados</td>
+                        <td>
+                          <button data-idx="${idx}" class="del">Excluir</button>
+                          <button data-idx="${idx}" class="reveal">Revelar (precisa da senha)</button>
+                        </td>`;
+        tblBody.appendChild(tr);
+      });
+      // bind
+      tblBody.querySelectorAll('.del').forEach(b => b.addEventListener('click', () => {
+        const i = +b.dataset.idx;
+        if (confirm('Excluir este participante?')) {
+          adminData.splice(i,1);
+          renderTable();
+        }
+      }));
+      tblBody.querySelectorAll('.reveal').forEach(b => b.addEventListener('click', async () => {
+        const i = +b.dataset.idx;
+        const pwd = prompt('Insira a senha do papel dessa pessoa para descriptografar:');
+        if (!pwd) return;
+        try {
+          const decrypted = await decryptParticipant(adminData[i], pwd);
+          if (!decrypted) { alert('Senha incorreta ou dados inválidos.'); return; }
+          // show editable form
+          const newName = prompt('Editar nome:', adminData[i].name) || adminData[i].name;
+          const newMeta = prompt('Observações (meta):', decrypted.meta || '') || '';
+          // build new items string for editing
+          const itemsText = decrypted.items.map(it => `${it.title} | ${it.link || ''} | ${it.note || ''}`).join('\n');
+          const editedItemsText = prompt('Edite os itens (cada linha = título | link | nota):', itemsText);
+          if (editedItemsText === null) return; // cancel
+          const newItems = editedItemsText.split('\n').map(line => {
+            const [title, link, note] = line.split('|').map(s => s ? s.trim() : '');
+            return { title: title || '', link: link || '', note: note || '' };
+          }).filter(it => it.title);
+          // re-encrypt with same password
+          const enc = await encryptParticipantData({ items: newItems, meta: newMeta }, pwd);
+          adminData[i] = { name: newName, enc: enc.cipherText, salt: enc.salt, iv: enc.iv };
+          alert('Atualizado com sucesso.');
+          renderTable();
+        } catch (err) {
+          console.error(err);
+          alert('Erro ao tentar descriptografar/atualizar');
+        }
+      }) );
+    }
+
+    document.getElementById('download-btn').addEventListener('click', () => {
+      const blob = new Blob([JSON.stringify(adminData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'data.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    document.getElementById('clear-btn').addEventListener('click', () => {
+      if (confirm('Limpar toda a lista?')) {
+        adminData = [];
+        renderTable();
+      }
+    });
+  </script>
+</body>
+</html>

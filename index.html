@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Amigo Secreto — Ver Presente</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div class="header-natal">
+  <h1>🎄 FAMÍLIA SOUZA NATAL 🎄</h1>
+  <div class="snow"></div>
+</div>
+  <main class="container">
+    <h1>Amigo Secreto Da Família Souza🫶🎄</h1>
+    <p>Digite o nome da pessoa que você tirou e a senha do papel.</p>
+
+    <form id="view-form" class="card">
+      <label>
+        Nome da pessoa (exato):
+        <input id="target-name" required autocomplete="off" />
+      </label>
+      <label>
+        Senha do papel:
+        <input id="paper-password" type="password" required autocomplete="off" />
+      </label>
+      <button type="submit">Ver presentes 🎁</button>
+      <div id="view-msg" class="msg"></div>
+    </form>
+
+    <section id="results" class="card hidden">
+      <h2>Presentes de <span id="owner-name"></span></h2>
+      <ol id="wishlist"></ol>
+      <p id="notes"></p>
+      <button id="back-btn">Voltar</button>
+    </section>
+
+    <footer class="muted">
+      <a href="cadastro.html">Cadastrar participante</a> ·
+      <a href="admin.html">Painel do organizador</a>
+    </footer>
+  </main>
+
+  <script src="script.js"></script>
+  <script>
+    // index-specific behavior
+    document.getElementById('view-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('target-name').value.trim();
+      const pwd = document.getElementById('paper-password').value;
+      const msg = document.getElementById('view-msg');
+      msg.textContent = 'Carregando...';
+
+      try {
+        const data = await loadDataFile();
+        const entry = data.find(d => d.name.toLowerCase() === name.toLowerCase());
+        if (!entry) {
+          msg.textContent = 'Nome não encontrado. Verifique se está escrito corretamente.';
+          return;
+        }
+        // try to decrypt
+        const decrypted = await decryptParticipant(entry, pwd);
+        if (!decrypted) {
+          msg.textContent = 'Senha incorreta ou dados inválidos.';
+          return;
+        }
+        // show
+        document.getElementById('owner-name').textContent = entry.name;
+        const listEl = document.getElementById('wishlist');
+        listEl.innerHTML = '';
+        decrypted.items.forEach(it => {
+          const li = document.createElement('li');
+          const text = document.createElement('div');
+          text.innerHTML = `<strong>${escapeHtml(it.title)}</strong> ${it.link ? `— <a href="${escapeHtml(it.link)}" target="_blank" rel="noopener noreferrer">link</a>` : ''}`;
+          if (it.note) text.innerHTML += `<div class="small muted">${escapeHtml(it.note)}</div>`;
+          li.appendChild(text);
+          listEl.appendChild(li);
+        });
+        document.getElementById('notes').textContent = decrypted.meta || '';
+        msg.textContent = '';
+        document.getElementById('view-form').classList.add('hidden');
+        document.getElementById('results').classList.remove('hidden');
+      } catch (err) {
+        console.error(err);
+        msg.textContent = 'Erro ao carregar dados.';
+      }
+    });
+
+    document.getElementById('back-btn').addEventListener('click', () => {
+      document.getElementById('results').classList.add('hidden');
+      document.getElementById('view-form').classList.remove('hidden');
+      document.getElementById('view-msg').textContent = '';
+      document.getElementById('view-form').reset();
+    });
+  </script>
+</body>
+</html>

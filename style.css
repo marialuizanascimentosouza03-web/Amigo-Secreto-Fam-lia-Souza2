@@ -1,0 +1,105 @@
+:root{
+  --bg: linear-gradient(180deg, #ffe6e6 0%, #e6ffe6 100%); /* fundo vermelho e verde suave */
+  --card: #ffffff;
+  --accent-red: #b71c1c;      /* vermelho natal */
+  --accent-green: #2e7d32;    /* verde natal */
+  --accent-gold: #d4af37;     /* dourado */
+  --muted: #555;
+}
+
+*{box-sizing:border-box;font-family: 'Trebuchet MS', sans-serif;}
+body{
+  margin:0;
+  background: var(--bg);
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:32px;
+  color:#222;
+}
+
+.container{
+  width:100%;
+  max-width:880px;
+}
+
+h1{
+  margin:0 0 8px;
+  font-size:2rem;
+  color:var(--accent-red);
+  text-shadow: 1px 1px 3px #fffdf6;
+}
+h2{
+  margin:0 0 8px;
+  color:var(--accent-green);
+  text-shadow: 1px 1px 2px #fffdf6;
+}
+
+.card{
+  background:var(--card);
+  border-radius:16px;
+  padding:20px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+  margin-bottom:16px;
+  border: 2px solid var(--accent-gold);
+}
+
+label{display:block;margin-bottom:10px;}
+input[type="text"], input[type="password"], input[type="url"], input, textarea{
+  width:100%;
+  padding:10px 12px;
+  border-radius:10px;
+  border:1px solid #ccc;
+  margin-top:6px;
+}
+
+button{
+  background: var(--accent-red);
+  color:white;
+  border:none;
+  padding:10px 16px;
+  border-radius:12px;
+  cursor:pointer;
+  font-weight:700;
+  transition: all 0.2s ease;
+}
+
+button:hover{
+  background: var(--accent-green);
+  color: #fffdf6;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+button[disabled]{opacity:.6;cursor:not-allowed;}
+.row{display:flex;gap:10px;align-items:center;margin-top:8px;flex-wrap:wrap;}
+.small{font-size:0.85rem;}
+.muted{color:var(--muted);}
+
+.hidden{display:none;}
+.msg{margin-top:8px;color:var(--muted);}
+
+.item-row{
+  border:1px dashed #f0e68c; /* dourado leve */
+  padding:10px;
+  border-radius:12px;
+  margin-bottom:10px;
+  background: linear-gradient(135deg, #fffbe6, #e6fff9);
+}
+
+.item-row .remove-item{
+  background:transparent;color:var(--accent-red);border:1px solid var(--accent-red);padding:6px;border-radius:10px;margin-top:8px;
+  transition: all 0.2s ease;
+}
+.item-row .remove-item:hover{
+  background: var(--accent-red);
+  color:white;
+}
+
+.full{width:100%;border-collapse:collapse;}
+.full th, .full td{padding:10px;border-bottom:1px solid #f0e6d6;text-align:left;}
+.full tbody tr:hover{background: #fff8e1;}
+
+a{color:var(--accent-green);text-decoration:none;}
+a:hover{color:var(--accent-red);}
+footer{margin-top:12px;text-align:center;font-size:0.9rem;}
