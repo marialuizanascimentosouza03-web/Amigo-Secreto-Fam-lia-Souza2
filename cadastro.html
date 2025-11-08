@@ -9,32 +9,26 @@
 <body>
   <main class="container">
     <h1>Cadastrar participante</h1>
-    <p>Preencha o nome, seus desejos e a senha que será escrita no papel. Você pode adicionar quantos presentes quiser (até 10).</p>
+    <p>Preencha o nome, seus desejos e a senha que será escrita no papel.</p>
 
     <form id="cad-form" class="card">
       <label>Nome completo:
         <input id="name" required />
       </label>
 
-      <div id="items-area">
-        <!-- dynamic wishlist items -->
-      </div>
+      <div id="items-area"></div>
 
       <div class="row">
         <button type="button" id="add-item">Adicionar item</button>
         <button type="button" id="reset-items">Resetar itens</button>
       </div>
 
-      <label>Senha do papel (compartilhe somente no papel):
+      <label>Senha do papel:
         <input id="paper-pass" type="password" required />
       </label>
 
-      <label>Observações (ex: tamanhos, cores):
-        <input id="meta" placeholder="Opcional" />
-      </label>
-
       <div class="row">
-        <button type="submit">Salvar & Gerar data.json</button>
+        <button type="submit">Salvar 🎁</button>
       </div>
 
       <div id="cad-msg" class="msg"></div>
@@ -46,108 +40,71 @@
     </footer>
   </main>
 
-  <script src="script.js"></script>
-  <script>
-    const itemsArea = document.getElementById('items-area');
-    const addBtn = document.getElementById('add-item');
-    const resetBtn = document.getElementById('reset-items');
-    const cadMsg = document.getElementById('cad-msg');
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-    function createItemRow(idx = 0, title = '', link = '', note = '') {
-      const wrapper = document.createElement('div');
-      wrapper.className = 'item-row';
-      wrapper.innerHTML = `
-        <label>Item ${idx + 1}:
-          <input class="it-title" placeholder="Título (ex: Camiseta azul)" value="${title}" />
-        </label>
-        <label>Link:
-          <input class="it-link" placeholder="URL (opcional)" value="${link}" />
-        </label>
-        <label>Observação:
-          <input class="it-note" placeholder="Opcional" value="${note}" />
-        </label>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBcHaVgHaxwDkrNv6xVf0-b0RGdlslGjog",
+      authDomain: "amigo-secreto-familia-souza30.firebaseapp.com",
+      projectId: "amigo-secreto-familia-souza30",
+      storageBucket: "amigo-secreto-familia-souza30.firebasestorage.app",
+      messagingSenderId: "825640803161",
+      appId: "1:825640803161:web:dacbdeb6a76f07fe6f8a48"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const itemsArea = document.getElementById("items-area");
+    const addBtn = document.getElementById("add-item");
+    const resetBtn = document.getElementById("reset-items");
+    const cadMsg = document.getElementById("cad-msg");
+
+    function addItem(title = "", link = "", note = "") {
+      const div = document.createElement("div");
+      div.className = "item-row";
+      div.innerHTML = `
+        <label>Título: <input class="it-title" placeholder="Ex: Camiseta azul" value="${title}" /></label>
+        <label>Link: <input class="it-link" placeholder="URL (opcional)" value="${link}" /></label>
+        <label>Observação: <input class="it-note" placeholder="Opcional" value="${note}" /></label>
         <button type="button" class="remove-item">Remover</button>
       `;
-      wrapper.querySelector('.remove-item').addEventListener('click', () => {
-        wrapper.remove();
-        refreshItemIndices();
-      });
-      return wrapper;
+      div.querySelector(".remove-item").addEventListener("click", () => div.remove());
+      itemsArea.appendChild(div);
     }
 
-    function refreshItemIndices() {
-      const rows = itemsArea.querySelectorAll('.item-row');
-      rows.forEach((r, i) => {
-        r.querySelector('label').firstChild.textContent = `Item ${i + 1}:`;
-      });
-    }
-
-    function addItem(title = '', link = '', note = '') {
-      const rows = itemsArea.querySelectorAll('.item-row').length;
-      if (rows >= 10) return false;
-      itemsArea.appendChild(createItemRow(rows, title, link, note));
-      return true;
-    }
-
-    // start with 1 empty item
     addItem();
 
-    addBtn.addEventListener('click', () => {
-      if (!addItem()) alert('Máximo de 10 itens atingido.');
-    });
+    addBtn.addEventListener("click", () => addItem());
+    resetBtn.addEventListener("click", () => { itemsArea.innerHTML = ""; addItem(); });
 
-    resetBtn.addEventListener('click', () => {
-      itemsArea.innerHTML = '';
-      addItem();
-    });
+    document.getElementById("cad-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const nome = document.getElementById("name").value.trim();
+      const senha = document.getElementById("paper-pass").value.trim();
 
-    // submit form
-    let currentData = [];
-    document.getElementById('cad-form').addEventListener('submit', async (ev) => {
-      ev.preventDefault();
-      cadMsg.textContent = 'Processando...';
-      const name = document.getElementById('name').value.trim();
-      const pass = document.getElementById('paper-pass').value;
-      const meta = document.getElementById('meta').value.trim();
-
-      if (!name || !pass) { cadMsg.textContent = 'Nome e senha são obrigatórios.'; return; }
-
-      const items = [];
-      document.querySelectorAll('.item-row').forEach(r => {
-        const title = r.querySelector('.it-title').value.trim();
-        const link = r.querySelector('.it-link').value.trim();
-        const note = r.querySelector('.it-note').value.trim();
-        if (title) items.push({ title, link, note });
+      const itens = [];
+      document.querySelectorAll(".item-row").forEach((r) => {
+        const titulo = r.querySelector(".it-title").value.trim();
+        const link = r.querySelector(".it-link").value.trim();
+        const obs = r.querySelector(".it-note").value.trim();
+        if (titulo) itens.push({ titulo, link, obs });
       });
 
-      if (items.length === 0) {
-        cadMsg.textContent = 'Adicione pelo menos 1 item desejado.';
+      if (!nome || !senha || itens.length === 0) {
+        cadMsg.textContent = "Preencha todos os campos obrigatórios.";
         return;
       }
 
       try {
-        const encrypted = await encryptParticipantData({ items, meta }, pass);
-        // remove se já existe
-        currentData = currentData.filter(d => d.name.toLowerCase() !== name.toLowerCase());
-        currentData.push({
-          name,
-          enc: encrypted.cipherText,
-          salt: encrypted.salt,
-          iv: encrypted.iv
-        });
-
-        // download data.json
-        const blob = new Blob([JSON.stringify(currentData, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'data.json';
-        a.click();
-        URL.revokeObjectURL(url);
-        cadMsg.textContent = 'Cadastro salvo. Baixe o data.json gerado e substitua o antigo no site.';
+        await setDoc(doc(db, "listas", nome), { senha, itens });
+        cadMsg.textContent = "🎉 Lista salva com sucesso!";
+        e.target.reset();
+        itemsArea.innerHTML = ""; addItem();
       } catch (err) {
         console.error(err);
-        cadMsg.textContent = 'Erro ao criptografar os dados.';
+        cadMsg.textContent = "Erro ao salvar: " + err.message;
       }
     });
   </script>
