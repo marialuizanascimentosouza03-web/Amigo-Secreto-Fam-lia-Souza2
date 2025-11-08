@@ -8,21 +8,19 @@
 </head>
 <body>
   <main class="container">
-    <h1>🎅 Painel do Organizador</h1>
-    <p>Gerencie os cadastros salvos no banco do Firebase (Firestore).</p>
+    <h1>Painel do Organizador</h1>
+    <p>Gerencie os cadastros do Firebase (leitura e exclusão).</p>
 
     <section class="card">
-      <button id="listar-btn">🔄 Atualizar lista</button>
+      <button id="listar">Atualizar listas 🔄</button>
       <table class="full">
-        <thead>
-          <tr><th>Nome</th><th>Qtd. Itens</th><th>Ações</th></tr>
-        </thead>
+        <thead><tr><th>Nome</th><th>Itens</th><th>Ações</th></tr></thead>
         <tbody id="tabela"></tbody>
       </table>
     </section>
 
     <footer class="muted">
-      <a href="index.html">Ver listas</a> ·
+      <a href="index.html">Ver presentes</a> ·
       <a href="cadastro.html">Cadastrar participante</a>
     </footer>
   </main>
@@ -31,7 +29,6 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
     import { getFirestore, collection, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-    // Configuração Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyBcHaVgHaxwDkrNv6xVf0-b0RGdlslGjog",
       authDomain: "amigo-secreto-familia-souza30.firebaseapp.com",
@@ -45,56 +42,40 @@
     const db = getFirestore(app);
 
     const tabela = document.getElementById("tabela");
-    const btnListar = document.getElementById("listar-btn");
 
-    // 🔄 Atualizar tabela
     async function listar() {
       tabela.innerHTML = "<tr><td colspan='3'>Carregando...</td></tr>";
       const querySnapshot = await getDocs(collection(db, "listas"));
       tabela.innerHTML = "";
-      querySnapshot.forEach((docSnap) => {
-        const dados = docSnap.data();
+      querySnapshot.forEach((d) => {
+        const data = d.data();
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${docSnap.id}</td>
-          <td>${dados.itens?.length || 0}</td>
+          <td>${d.id}</td>
+          <td>${data.itens?.length || 0}</td>
           <td>
-            <button class="ver" data-id="${docSnap.id}">Ver detalhes</button>
-            <button class="excluir" data-id="${docSnap.id}">Excluir</button>
-          </td>
-        `;
+            <button class="ver" data-id="${d.id}">Ver</button>
+            <button class="del" data-id="${d.id}">Excluir</button>
+          </td>`;
         tabela.appendChild(tr);
       });
     }
 
-    // 🔍 Ver detalhes
-    tabela.addEventListener("click", async (e) => {
-      if (e.target.classList.contains("ver")) {
-        const id = e.target.dataset.id;
-        const docSnap = await getDocs(collection(db, "listas"));
-        const alvo = [...docSnap.docs].find(d => d.id === id);
-        if (!alvo) return alert("Lista não encontrada");
-        const dados = alvo.data();
-        let msg = `🎁 Lista de ${id}\nSenha: ${dados.senha}\n\nItens:\n`;
-        dados.itens.forEach((it, i) => {
-          msg += `${i + 1}. ${it.titulo} ${it.link ? `(${it.link})` : ""}\n${it.obs || ""}\n\n`;
-        });
-        alert(msg);
-      }
+    document.getElementById("listar").addEventListener("click", listar);
 
-      if (e.target.classList.contains("excluir")) {
-        const id = e.target.dataset.id;
-        if (confirm(`Excluir lista de ${id}?`)) {
+    tabela.addEventListener("click", async (e) => {
+      const id = e.target.dataset.id;
+      if (e.target.classList.contains("ver")) {
+        alert(`Para ver detalhes, use o nome "${id}" e a senha correta na tela principal.`);
+      }
+      if (e.target.classList.contains("del")) {
+        if (confirm(`Excluir ${id}?`)) {
           await deleteDoc(doc(db, "listas", id));
-          alert("Excluído com sucesso!");
           listar();
         }
       }
     });
 
-    btnListar.addEventListener("click", listar);
-
-    // Carrega na abertura
     listar();
   </script>
 </body>
