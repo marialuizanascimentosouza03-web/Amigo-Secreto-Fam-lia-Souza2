@@ -3,59 +3,42 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Amigo Secreto — Cadastro</title>
+  <title>Amigo Secreto — Ver Presente</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="header-natal">
-    <h1>🎄 FAMÍLIA SOUZA NATAL 🎄</h1>
-    <div class="snow"></div>
-  </div>
-
   <main class="container">
-    <h1>🎁 Cadastrar Participante</h1>
-    <p>Preencha sua lista de desejos com nome, senha e itens que deseja ganhar.</p>
+    <h1>Amigo Secreto Da Família Souza 🫶🎄</h1>
+    <p>Digite o nome da pessoa que você tirou e a senha do papel.</p>
 
-    <form id="cadastro-form" class="card">
-      <label>
-        Nome completo:
-        <input id="nome" type="text" required placeholder="Ex: Maria Luiza Souza" />
+    <form id="view-form" class="card">
+      <label>Nome da pessoa (exato):
+        <input id="target-name" required autocomplete="off" />
       </label>
-
-      <div id="itens-container">
-        <div class="item card" id="item-1">
-          <h3>Item 1:</h3>
-          <label>Título: <input class="titulo" type="text" required placeholder="Ex: Camiseta azul" /></label>
-          <label>Link: <input class="link" type="url" placeholder="URL (opcional)" /></label>
-          <label>Observação: <input class="obs" type="text" placeholder="Opcional" /></label>
-          <button type="button" class="remover">Remover</button>
-        </div>
-      </div>
-
-      <button type="button" id="adicionar-item">Adicionar item</button>
-      <button type="button" id="resetar-itens">Resetar itens</button>
-
-      <label>
-        Senha do papel (use uma senha simples para lembrar):
-        <input id="senha" type="password" required />
+      <label>Senha do papel:
+        <input id="paper-password" type="password" required autocomplete="off" />
       </label>
-
-      <button type="submit" id="salvarLista">Salvar lista 🎅</button>
-      <div id="mensagem" class="msg"></div>
+      <button type="submit">Ver presentes 🎁</button>
+      <div id="view-msg" class="msg"></div>
     </form>
 
+    <section id="results" class="card hidden">
+      <h2>Presentes de <span id="owner-name"></span></h2>
+      <ol id="wishlist"></ol>
+      <p id="notes"></p>
+      <button id="back-btn">Voltar</button>
+    </section>
+
     <footer class="muted">
-      <a href="index.html">Ver listas</a> ·
+      <a href="cadastro.html">Cadastrar participante</a> ·
       <a href="admin.html">Painel do organizador</a>
     </footer>
   </main>
 
-  <!-- Firebase + Script -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-    // 🔥 Configuração do Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyBcHaVgHaxwDkrNv6xVf0-b0RGdlslGjog",
       authDomain: "amigo-secreto-familia-souza30.firebaseapp.com",
@@ -68,76 +51,57 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // 🔢 Adicionar e remover itens dinamicamente
-    let contadorItens = 1;
-    const container = document.getElementById("itens-container");
-    const btnAdd = document.getElementById("adicionar-item");
-    const btnReset = document.getElementById("resetar-itens");
-
-    btnAdd.addEventListener("click", () => {
-      contadorItens++;
-      const div = document.createElement("div");
-      div.classList.add("item", "card");
-      div.innerHTML = `
-        <h3>Item ${contadorItens}:</h3>
-        <label>Título: <input class="titulo" type="text" required placeholder="Ex: Camiseta azul" /></label>
-        <label>Link: <input class="link" type="url" placeholder="URL (opcional)" /></label>
-        <label>Observação: <input class="obs" type="text" placeholder="Opcional" /></label>
-        <button type="button" class="remover">Remover</button>
-      `;
-      container.appendChild(div);
-    });
-
-    btnReset.addEventListener("click", () => {
-      container.innerHTML = `
-        <div class="item card" id="item-1">
-          <h3>Item 1:</h3>
-          <label>Título: <input class="titulo" type="text" required placeholder="Ex: Camiseta azul" /></label>
-          <label>Link: <input class="link" type="url" placeholder="URL (opcional)" /></label>
-          <label>Observação: <input class="obs" type="text" placeholder="Opcional" /></label>
-          <button type="button" class="remover">Remover</button>
-        </div>
-      `;
-      contadorItens = 1;
-    });
-
-    container.addEventListener("click", (e) => {
-      if (e.target.classList.contains("remover")) {
-        e.target.closest(".item").remove();
-      }
-    });
-
-    // 💾 Salvar lista no Firestore
-    document.getElementById("cadastro-form").addEventListener("submit", async (e) => {
+    document.getElementById("view-form").addEventListener("submit", async (e) => {
       e.preventDefault();
-      const nome = document.getElementById("nome").value.trim();
-      const senha = document.getElementById("senha").value.trim();
-      const msg = document.getElementById("mensagem");
+      const nome = document.getElementById("target-name").value.trim();
+      const senha = document.getElementById("paper-password").value.trim();
+      const msg = document.getElementById("view-msg");
 
-      if (!nome || !senha) {
-        msg.textContent = "Preencha todos os campos obrigatórios.";
-        return;
-      }
-
-      const itens = [];
-      document.querySelectorAll(".item").forEach((el) => {
-        const titulo = el.querySelector(".titulo").value.trim();
-        const link = el.querySelector(".link").value.trim();
-        const obs = el.querySelector(".obs").value.trim();
-        if (titulo) itens.push({ titulo, link, obs });
-      });
+      msg.textContent = "Carregando...";
 
       try {
-        await setDoc(doc(db, "listas", nome), { senha, itens });
-        msg.textContent = "🎉 Lista salva com sucesso!";
-        e.target.reset();
-        container.innerHTML = ""; // limpa os itens
-        contadorItens = 0;
-        btnAdd.click(); // adiciona um item inicial
-      } catch (erro) {
-        console.error(erro);
-        msg.textContent = "Erro ao salvar: " + erro.message;
+        const docRef = doc(db, "listas", nome);
+        const docSnap = await getDoc(docRef);
+
+        if (!docSnap.exists()) {
+          msg.textContent = "Nome não encontrado.";
+          return;
+        }
+
+        const dados = docSnap.data();
+        if (dados.senha !== senha) {
+          msg.textContent = "Senha incorreta.";
+          return;
+        }
+
+        // exibe lista
+        document.getElementById("owner-name").textContent = nome;
+        const lista = document.getElementById("wishlist");
+        lista.innerHTML = "";
+
+        dados.itens.forEach((item) => {
+          const li = document.createElement("li");
+          li.innerHTML = `
+            <strong>${item.titulo}</strong>
+            ${item.link ? `— <a href="${item.link}" target="_blank">link</a>` : ""}
+            ${item.obs ? `<div class="small muted">${item.obs}</div>` : ""}
+          `;
+          lista.appendChild(li);
+        });
+
+        msg.textContent = "";
+        document.getElementById("view-form").classList.add("hidden");
+        document.getElementById("results").classList.remove("hidden");
+      } catch (err) {
+        msg.textContent = "Erro ao carregar dados.";
+        console.error(err);
       }
+    });
+
+    document.getElementById("back-btn").addEventListener("click", () => {
+      document.getElementById("results").classList.add("hidden");
+      document.getElementById("view-form").classList.remove("hidden");
+      document.getElementById("view-form").reset();
     });
   </script>
 </body>
